@@ -32,6 +32,7 @@ export default function Home() {
   const [cameraTarget, setCameraTarget] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
+  const [isWalkMode, setIsWalkMode] = useState(false);
   const controlsRef = useRef();
 
   // Dashboard routing — pages open instantly (no artificial loading delay).
@@ -59,16 +60,17 @@ export default function Home() {
       <div className="canvas-container">
         <Canvas shadows camera={{ position: [25, 20, 25], fov: 50, near: 0.1, far: 500 }}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: 3, toneMappingExposure: 1.0 }}
-          onCreated={({ gl }) => { gl.setClearColor('#000000'); }}>
+          onCreated={({ gl }) => { gl.setClearColor('#d0e0f5'); }}>
           <Suspense fallback={null}>
             <CityScene onBuildingClick={handleBuildingClick} selectedBuilding={selectedBuilding}
-              controlsRef={controlsRef} onSceneReady={handleSceneReady} cameraTarget={cameraTarget} />
+              controlsRef={controlsRef} onSceneReady={handleSceneReady} cameraTarget={cameraTarget}
+              isWalkMode={isWalkMode} />
           </Suspense>
         </Canvas>
       </div>
 
       <HUD onResetCamera={handleResetCamera} onZoomIn={handleZoomIn} onZoomOut={handleZoomOut}
-        onOpenModal={setActivePage} />
+        onOpenModal={setActivePage} isWalkMode={isWalkMode} onToggleWalkMode={() => setIsWalkMode(w => !w)} />
 
       <BuildingPanel building={selectedBuilding} onClose={handleClosePanel} />
 

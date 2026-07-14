@@ -34,8 +34,18 @@ function ReferralsIcon() {
   return (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>);
 }
+function WalkIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="4" r="2" />
+      <path d="M12 6c-1.5 0-3 1-3 3v4.5l-2 3.5" />
+      <path d="M12 6c1.5 0 2.5 1 3 2.5l1.5 3.5-2 3" />
+      <path d="M10 13.5L12 11l3 4" />
+    </svg>
+  );
+}
 
-export default function HUD({ onResetCamera, onZoomIn, onZoomOut, onOpenModal }) {
+export default function HUD({ onResetCamera, onZoomIn, onZoomOut, onOpenModal, isWalkMode, onToggleWalkMode }) {
   const { t, lang, setLang, balance, ethBalance, totalIncome, totalCost, netMonthly, economyStats } = useGame();
 
   const menu = [
@@ -134,17 +144,34 @@ export default function HUD({ onResetCamera, onZoomIn, onZoomOut, onOpenModal })
 
       {/* Controls */}
       <div className="hud-controls">
-        <button className="hud-btn" onClick={onZoomIn}><PlusIcon /></button>
-        <button className="hud-btn" onClick={onZoomOut}><MinusIcon /></button>
-        <button className="hud-btn" onClick={onResetCamera}><RefreshIcon /></button>
+        {!isWalkMode && <button className="hud-btn" onClick={onZoomIn}><PlusIcon /></button>}
+        {!isWalkMode && <button className="hud-btn" onClick={onZoomOut}><MinusIcon /></button>}
+        {!isWalkMode && <button className="hud-btn" onClick={onResetCamera}><RefreshIcon /></button>}
+        <button
+          className={`hud-btn ${isWalkMode ? 'active' : ''}`}
+          onClick={onToggleWalkMode}
+          title={t.walkMode}
+          style={isWalkMode ? { background: '#ffffff', color: '#000000', boxShadow: '0 0 15px rgba(255,255,255,0.6)' } : undefined}
+        >
+          <WalkIcon />
+        </button>
       </div>
 
       {/* Hints */}
       <div className="hud-hints glass">
-        <div className="hud-hint"><MouseIcon /><span>{t.rotate}</span></div>
-        <div className="hud-hint"><MoveIcon /><span>{t.pan}</span></div>
-        <div className="hud-hint"><ScrollIcon /><span>{t.zoom}</span></div>
-        <div className="hud-hint"><CursorClickIcon /><span>{t.buildingInfo}</span></div>
+        {isWalkMode ? (
+          <>
+            <div className="hud-hint" style={{ color: '#00ffff' }}><MoveIcon /><span>{t.walkModeHint.split('|')[0]?.trim()}</span></div>
+            <div className="hud-hint" style={{ color: '#00ffff' }}><MouseIcon /><span>{t.walkModeHint.split('|')[1]?.trim()}</span></div>
+          </>
+        ) : (
+          <>
+            <div className="hud-hint"><MouseIcon /><span>{t.rotate}</span></div>
+            <div className="hud-hint"><MoveIcon /><span>{t.pan}</span></div>
+            <div className="hud-hint"><ScrollIcon /><span>{t.zoom}</span></div>
+            <div className="hud-hint"><CursorClickIcon /><span>{t.buildingInfo}</span></div>
+          </>
+        )}
       </div>
     </div>
   );

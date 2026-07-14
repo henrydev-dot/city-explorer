@@ -132,6 +132,8 @@ const translations = {
     referralSimHint: 'Add a simulated player wallet to your referral list:',
     add: 'Add',
     tokenInfo: '$MRT Token (Base)',
+    walkMode: 'Walk Mode',
+    walkModeHint: 'WASD / Arrows to Walk | Click & Drag to Look',
   },
   tr: {
     loading: 'Monaco Estate Yükleniyor...',
@@ -265,6 +267,8 @@ const translations = {
     referralSimHint: 'Referans listenize simüle bir oyuncu cüzdanı ekleyin:',
     add: 'Ekle',
     tokenInfo: '$MRT Token (Base)',
+    walkMode: 'Gezinti Modu',
+    walkModeHint: 'WASD / Yön Tuşları ile Yürü | Sürükleyerek Bak',
   },
 };
 
