@@ -1,9 +1,11 @@
 'use client';
 
+import Image from 'next/image';
+
 export default function LoadingScreen({ progress, loaded, t }) {
   return (
     <div className={`loading-screen ${loaded ? 'loaded' : ''}`}>
-      <img src="/logo.png" alt="Mortgage" className="loading-logo-img" />
+      <Image src="/logo.png" alt="Mortgage" className="loading-logo-img" width={4004} height={465} priority />
       <div className="loading-bar-container">
         <div className="loading-bar" style={{ width: `${progress}%` }} />
       </div>

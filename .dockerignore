@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.env*
+!.env.example
+out
+coverage
+contracts
+README.md
+*.log

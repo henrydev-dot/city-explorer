@@ -41,8 +41,9 @@ function ClickableBuilding({ meshRef, building, onClick, isSelected, isHovered, 
   }), []);
 
   useFrame(() => {
-    const target = isHovered ? 0.14 : isSelected ? 0.08 : 0;
-    mat.opacity += (target - mat.opacity) * 0.12;
+    // Imperative three.js animation outside the React render cycle.
+    // eslint-disable-next-line react-hooks/immutability
+    mat.opacity += ((isHovered ? 0.14 : isSelected ? 0.08 : 0) - mat.opacity) * 0.12;
   });
 
   if (!meshRef) return null;
@@ -66,11 +67,15 @@ function Particles() {
   const ref = useRef();
   const count = 80;
   const positions = useMemo(() => {
+    // Deterministic scatter (stable across renders, no Math.random in render).
     const p = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      p[i * 3] = (Math.random() - 0.5) * 80;
-      p[i * 3 + 1] = Math.random() * 25 + 5;
-      p[i * 3 + 2] = (Math.random() - 0.5) * 80;
+      const a = Math.sin(i * 12.9898) * 43758.5453;
+      const b = Math.sin(i * 78.233) * 12543.2341;
+      const c = Math.sin(i * 39.425) * 26251.1123;
+      p[i * 3] = ((a - Math.floor(a)) - 0.5) * 80;
+      p[i * 3 + 1] = (b - Math.floor(b)) * 25 + 5;
+      p[i * 3 + 2] = ((c - Math.floor(c)) - 0.5) * 80;
     }
     return p;
   }, []);
@@ -130,29 +135,31 @@ export default function CityScene({ onBuildingClick, selectedBuilding, controlsR
   const { scene } = useGLTF('/models/street_city.glb');
   const { camera } = useThree();
   const [hoveredBuilding, setHoveredBuilding] = useState(null);
-  const [buildingMeshes, setBuildingMeshes] = useState([]);
   const sceneReadyCalled = useRef(false);
 
+  // Shadow/material tuning is an imperative update to the loaded GLTF.
   useEffect(() => {
     if (!scene) return;
-
-    const meshes = [];
     scene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        if (child.material) {
-          const m = child.material;
-          if (m.isMeshStandardMaterial || m.isMeshPhysicalMaterial) {
-            m.envMapIntensity = 1.0;
-            m.roughness = Math.min(Math.max(m.roughness, 0.3), 0.85);
-            m.metalness = Math.max(m.metalness, 0.05);
-            m.needsUpdate = true;
-          }
-        }
-        meshes.push(child);
+      if (!child.isMesh) return;
+      child.castShadow = true;
+      child.receiveShadow = true;
+      const m = child.material;
+      if (m && (m.isMeshStandardMaterial || m.isMeshPhysicalMaterial)) {
+        m.envMapIntensity = 1.0;
+        m.roughness = Math.min(Math.max(m.roughness, 0.3), 0.85);
+        m.metalness = Math.max(m.metalness, 0.05);
+        m.needsUpdate = true;
       }
     });
+  }, [scene]);
+
+  // Derive the clickable-building list straight from the loaded scene.
+  const buildingMeshes = useMemo(() => {
+    if (!scene) return [];
+
+    const meshes = [];
+    scene.traverse((child) => { if (child.isMesh) meshes.push(child); });
 
     const meshesWithSize = meshes.map((m) => {
       const box = new THREE.Box3().setFromObject(m);
@@ -168,7 +175,8 @@ export default function CityScene({ onBuildingClick, selectedBuilding, controlsR
     const usedPositions = [];
 
     for (const item of meshesWithSize) {
-      if (assigned.length >= 10) break;
+      // Cap at the catalog size so every clickable building has apartments.
+      if (assigned.length >= BUILDING_NAMES.length) break;
       if (item.height < 0.8) continue;
 
       const tooClose = usedPositions.some(pos => item.center.distanceTo(pos) < 2.5);
@@ -178,14 +186,14 @@ export default function CityScene({ onBuildingClick, selectedBuilding, controlsR
       usedPositions.push(item.center.clone());
     }
 
-    const stats = (h, a) => [
-      { label: 'Kat Sayısı', value: String(Math.max(2, Math.round(h * 3))) },
-      { label: 'Alan (m²)', value: String(Math.round(a * 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') },
-      { label: 'Birim', value: String(Math.max(4, Math.round(a * 2))) },
-      { label: 'Kuruluş', value: String(2015 + Math.floor(Math.random() * 10)) },
+    const stats = (h, a, idx) => [
+      { label: 'Floors', value: String(Math.max(2, Math.round(h * 3))) },
+      { label: 'Area (m²)', value: String(Math.round(a * 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') },
+      { label: 'Units', value: String(Math.max(4, Math.round(a * 2))) },
+      { label: 'Built', value: String(2015 + ((idx * 3) % 10)) },
     ];
 
-    const updatedMeshes = assigned.map((item, idx) => {
+    return assigned.map((item, idx) => {
       const nameData = BUILDING_NAMES[idx % BUILDING_NAMES.length];
       return {
         building: {
@@ -194,21 +202,22 @@ export default function CityScene({ onBuildingClick, selectedBuilding, controlsR
           name: nameData.name,
           subtitle: nameData.subtitle,
           description: nameData.desc,
-          stats: stats(item.height, item.size.x * item.size.z),
+          stats: stats(item.height, item.size.x * item.size.z, idx),
           labelPosition: [item.center.x, item.center.y + item.size.y / 2 + 1.5, item.center.z],
           cameraTarget: { center: item.center.clone(), size: item.size.clone() },
         },
         meshRef: item.mesh,
       };
     });
+  }, [scene]);
 
-    setBuildingMeshes(updatedMeshes);
-
-    if (!sceneReadyCalled.current) {
-      sceneReadyCalled.current = true;
-      setTimeout(() => onSceneReady?.(), 500);
-    }
-  }, [scene, onSceneReady]);
+  // Signal the loading screen once the scene has produced its buildings.
+  useEffect(() => {
+    if (buildingMeshes.length === 0 || sceneReadyCalled.current) return undefined;
+    sceneReadyCalled.current = true;
+    const timer = setTimeout(() => onSceneReady?.(), 500);
+    return () => clearTimeout(timer);
+  }, [buildingMeshes, onSceneReady]);
 
   useEffect(() => {
     if (!scene) return;

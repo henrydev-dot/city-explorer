@@ -1,48 +1,133 @@
-// Monaco Shared economy game state
-// status: 'available' | 'owned' | 'taken' (owned by another player)
-const BUILDING_APARTMENTS = {
-  0: [
-    { id: 'b0-1', floor: 3, unit: 'Daire 301', unitEn: 'Apt 301', price: 4500, rentIncome: 120, annualCost: 280, status: 'available' },
-    { id: 'b0-2', floor: 7, unit: 'Daire 701', unitEn: 'Apt 701', price: 6200, rentIncome: 180, annualCost: 350, status: 'taken', owner: 'Player_42' },
-    { id: 'b0-3', floor: 12, unit: 'Daire 1201', unitEn: 'Apt 1201', price: 8800, rentIncome: 260, annualCost: 420, status: 'available' },
-    { id: 'b0-4', floor: 20, unit: 'Daire 2001', unitEn: 'Apt 2001', price: 12500, rentIncome: 380, annualCost: 550, status: 'taken', owner: 'CryptoKing' },
-    { id: 'b0-5', floor: 35, unit: 'Penthouse', unitEn: 'Penthouse', price: 25000, rentIncome: 750, annualCost: 900, status: 'available' },
-    { id: 'b0-6', floor: 40, unit: 'Sky Suite', unitEn: 'Sky Suite', price: 32000, rentIncome: 950, annualCost: 1100, status: 'taken', owner: 'WhaleX' },
-  ],
-  1: [
-    { id: 'b1-1', floor: 2, unit: 'Ofis 201', unitEn: 'Office 201', price: 3200, rentIncome: 95, annualCost: 200, status: 'available' },
-    { id: 'b1-2', floor: 5, unit: 'Ofis 502', unitEn: 'Office 502', price: 4800, rentIncome: 140, annualCost: 280, status: 'taken', owner: 'DevGuru' },
-    { id: 'b1-3', floor: 10, unit: 'Loft 1001', unitEn: 'Loft 1001', price: 7500, rentIncome: 220, annualCost: 380, status: 'available' },
-    { id: 'b1-4', floor: 18, unit: 'Suite 1801', unitEn: 'Suite 1801', price: 11000, rentIncome: 330, annualCost: 480, status: 'available' },
-  ],
-  2: [
-    { id: 'b2-1', floor: 0, unit: 'Mağaza A1', unitEn: 'Shop A1', price: 5500, rentIncome: 160, annualCost: 320, status: 'taken', owner: 'RetailPro' },
-    { id: 'b2-2', floor: 1, unit: 'Mağaza B3', unitEn: 'Shop B3', price: 4200, rentIncome: 125, annualCost: 260, status: 'available' },
-    { id: 'b2-3', floor: 3, unit: 'Restoran R1', unitEn: 'Restaurant R1', price: 6800, rentIncome: 200, annualCost: 380, status: 'available' },
-    { id: 'b2-4', floor: 5, unit: 'Daire 501', unitEn: 'Apt 501', price: 9200, rentIncome: 275, annualCost: 450, status: 'taken', owner: 'InvestorX' },
-  ],
-  3: [
-    { id: 'b3-1', floor: 1, unit: 'Daire 101', unitEn: 'Apt 101', price: 2800, rentIncome: 80, annualCost: 180, status: 'available' },
-    { id: 'b3-2', floor: 4, unit: 'Daire 401', unitEn: 'Apt 401', price: 3600, rentIncome: 105, annualCost: 220, status: 'taken', owner: 'Player_7' },
-    { id: 'b3-3', floor: 6, unit: 'Daire 601', unitEn: 'Apt 601', price: 4400, rentIncome: 130, annualCost: 270, status: 'available' },
-  ],
-  4: [
-    { id: 'b4-1', floor: 0, unit: 'Dükkan D1', unitEn: 'Store D1', price: 3000, rentIncome: 90, annualCost: 190, status: 'available' },
-    { id: 'b4-2', floor: 2, unit: 'Ofis 201', unitEn: 'Office 201', price: 4100, rentIncome: 120, annualCost: 250, status: 'available' },
-    { id: 'b4-3', floor: 5, unit: 'Daire 501', unitEn: 'Apt 501', price: 5200, rentIncome: 155, annualCost: 310, status: 'taken', owner: 'BlockFi' },
-  ],
-  5: [
-    { id: 'b5-1', floor: 1, unit: 'Stüdyo S1', unitEn: 'Studio S1', price: 2200, rentIncome: 65, annualCost: 150, status: 'available' },
-    { id: 'b5-2', floor: 3, unit: 'Daire 301', unitEn: 'Apt 301', price: 3400, rentIncome: 100, annualCost: 210, status: 'available' },
-  ],
+// Monaco Estate — shared game catalog.
+// The initial city ships with 49 apartments across 8 buildings (mirrors the
+// on-chain catalog seeded into contracts/MonacoEstate.sol). The admin can add
+// more buildings/units later, both on-chain and here.
+//
+// Apartment fields:
+//   status:   'available' | 'owned' (you) | 'listed' (yours, on market) | 'taken' (another player)
+//   currency: 'MRT' | 'ETH' | 'BOTH'  — what the PRIMARY sale accepts
+//   price:    primary price in $MRT, priceEth: primary price in ETH
+import { MRT_PER_ETH } from './constants';
+
+export const BUILDINGS = [
+  { name: 'Monte Carlo Casino', district: 'Casino Square' },
+  { name: 'Larvotto Beach Tower', district: 'Larvotto' },
+  { name: 'Hôtel de Paris Block', district: 'Casino Square' },
+  { name: 'Port Hercule Residence', district: 'La Condamine' },
+  { name: 'Grimaldi Plaza', district: 'Fontvieille' },
+  { name: 'La Condamine Offices', district: 'La Condamine' },
+  { name: 'Jardin Exotique Heights', district: 'Jardin Exotique' },
+  { name: 'Princess Grace Plaza', district: 'Larvotto' },
+];
+
+const TIERS = {
+  studio: { label: 'Studio', labelTr: 'Stüdyo', hue: 210 },
+  standard: { label: 'Residence', labelTr: 'Rezidans', hue: 160 },
+  premium: { label: 'Premium Suite', labelTr: 'Premium Süit', hue: 40 },
+  penthouse: { label: 'Penthouse', labelTr: 'Çatı Katı', hue: 280 },
 };
 
-// Initial Peer-to-Peer listings on the market
-const INITIAL_MARKET_LISTINGS = [
-  { id: 'list-1', buildingIndex: 0, aptId: 'b0-2', unit: 'Apt 701', floor: 7, seller: 'Player_42', price: 6800, rentIncome: 180, annualCost: 350 },
-  { id: 'list-2', buildingIndex: 0, aptId: 'b0-4', unit: 'Apt 2001', floor: 20, seller: 'CryptoKing', price: 13500, rentIncome: 380, annualCost: 550 },
-  { id: 'list-3', buildingIndex: 2, aptId: 'b2-4', unit: 'Apt 501', floor: 5, seller: 'InvestorX', price: 9800, rentIncome: 275, annualCost: 450 },
-];
+const VIEWS = ['Sea View', 'Marina View', 'City View', 'Garden View'];
+const VIEWS_TR = ['Deniz Manzarası', 'Marina Manzarası', 'Şehir Manzarası', 'Bahçe Manzarası'];
+
+// Deterministic PRNG so the catalog is identical on server and client.
+function mulberry32(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const NPC_NAMES = ['CryptoKing', 'WhaleX', 'DevGuru', 'RetailPro', 'InvestorX', 'Player_42', 'Player_7', 'BlockFi', 'MonacoWhale', 'YachtLife'];
+
+// Units per building — totals 49.
+const UNITS_PER_BUILDING = [8, 7, 6, 6, 6, 6, 5, 5];
+
+function buildCatalog() {
+  const rand = mulberry32(490716);
+  const catalog = {};
+  let unitSerial = 0;
+
+  UNITS_PER_BUILDING.forEach((count, b) => {
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      unitSerial++;
+      const topFloor = 12 + b * 3;
+      const floor = Math.max(1, Math.round((i + 1) * (topFloor / count)) - Math.floor(rand() * 2));
+      const isPenthouse = i === count - 1;
+      const tier = isPenthouse ? 'penthouse' : floor <= 3 ? 'studio' : floor >= topFloor - 3 ? 'premium' : 'standard';
+
+      const base = 2200 + floor * 420 + b * 300;
+      const tierMult = { studio: 0.8, standard: 1, premium: 1.6, penthouse: 2.8 }[tier];
+      const price = Math.round((base * tierMult) / 100) * 100;
+
+      // Yield 2.4–3.4% of price per month, maintenance ~30% of yearly rent.
+      const rentIncome = Math.round((price * (0.024 + rand() * 0.01)) / 5) * 5;
+      const annualCost = Math.round((rentIncome * 12 * (0.25 + rand() * 0.12)) / 5) * 5;
+
+      // Primary sale currency: penthouses are ETH-only trophy assets, premium
+      // units accept both, the rest are MRT.
+      const currency = isPenthouse ? 'ETH' : tier === 'premium' ? 'BOTH' : 'MRT';
+
+      const viewIdx = Math.floor(rand() * VIEWS.length);
+      const taken = rand() < 0.28; // ~28% of the city is already owned by NPCs
+
+      const unitNo = `${floor}${String((i % 4) + 1).padStart(2, '0')}`;
+      list.push({
+        id: `apt-${b}-${unitSerial}`,
+        buildingIndex: b,
+        floor,
+        unit: tier === 'penthouse' ? `Penthouse ${BUILDINGS[b].district}` : `Daire ${unitNo}`,
+        unitEn: tier === 'penthouse' ? `Penthouse ${BUILDINGS[b].district}` : `Apt ${unitNo}`,
+        tier,
+        view: VIEWS[viewIdx],
+        viewTr: VIEWS_TR[viewIdx],
+        sqm: Math.round(38 + tierMult * 55 + rand() * 25),
+        price,
+        priceEth: Number((price / MRT_PER_ETH).toFixed(3)),
+        currency,
+        rentIncome,
+        annualCost,
+        status: taken ? 'taken' : 'available',
+        owner: taken ? NPC_NAMES[Math.floor(rand() * NPC_NAMES.length)] : null,
+      });
+    }
+    catalog[b] = list;
+  });
+  return catalog;
+}
+
+const BUILDING_APARTMENTS = buildCatalog();
+
+// A few NPC-owned units start out listed on the P2P market.
+function buildInitialListings(apartments) {
+  const listings = [];
+  Object.values(apartments).forEach((arr) => {
+    arr.forEach((apt) => {
+      if (apt.status !== 'taken') return;
+      // List roughly a third of NPC units, alternating currencies.
+      if (listings.length < 6 && apt.floor % 3 === 0) {
+        const useEth = listings.length % 2 === 1;
+        listings.push({
+          id: `list-npc-${apt.id}`,
+          buildingIndex: apt.buildingIndex,
+          aptId: apt.id,
+          seller: apt.owner,
+          price: useEth
+            ? Number(((apt.price * 1.12) / MRT_PER_ETH).toFixed(3))
+            : Math.round((apt.price * 1.1) / 50) * 50,
+          currency: useEth ? 'ETH' : 'MRT',
+        });
+      }
+    });
+  });
+  return listings;
+}
+
+const INITIAL_MARKET_LISTINGS = buildInitialListings(BUILDING_APARTMENTS);
 
 export function getInitialApartments() {
   return JSON.parse(JSON.stringify(BUILDING_APARTMENTS));
@@ -52,17 +137,28 @@ export function getInitialMarketListings() {
   return JSON.parse(JSON.stringify(INITIAL_MARKET_LISTINGS));
 }
 
+export function getApartment(apartments, buildingIdx, aptId) {
+  return (apartments[buildingIdx] || []).find((a) => a.id === aptId) || null;
+}
+
+export function getAllApartments(apartments) {
+  return Object.values(apartments).flat();
+}
+
 export function getEconomyStats(apartments) {
   let total = 0, sold = 0, available = 0, yours = 0;
-  Object.values(apartments).forEach(arr => {
-    arr.forEach(apt => {
-      total++;
-      if (apt.status === 'owned') { sold++; yours++; }
-      else if (apt.status === 'taken') { sold++; }
-      else { available++; }
-    });
+  getAllApartments(apartments).forEach((apt) => {
+    total++;
+    if (apt.status === 'owned' || apt.status === 'listed') { sold++; yours++; }
+    else if (apt.status === 'taken') sold++;
+    else available++;
   });
   return { total, sold, available, yours };
 }
 
+export function getTier(tier) {
+  return TIERS[tier] || TIERS.standard;
+}
+
+export { NPC_NAMES };
 export default BUILDING_APARTMENTS;

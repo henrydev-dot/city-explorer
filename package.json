@@ -14,12 +14,13 @@
     "@react-three/fiber": "^9.6.1",
     "@react-three/postprocessing": "^3.0.4",
     "@tanstack/react-query": "^5.101.2",
+    "mongodb": "^7.5.0",
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "three": "^0.185.1",
     "viem": "^2.55.1",
-    "wagmi": "^3.7.1"
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
     "eslint": "^9",

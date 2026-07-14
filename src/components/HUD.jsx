@@ -1,7 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import { PlusIcon, MinusIcon, RefreshIcon, MouseIcon, ScrollIcon, CursorClickIcon, MoveIcon, TrendingUpIcon } from './Icons';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useGame } from '../state/GameContext';
+import { APPRECIATION_RATE } from '../lib/constants';
 
 function MarketplaceIcon() {
   return (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -32,60 +35,49 @@ function ReferralsIcon() {
     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>);
 }
 
-export default function HUD({ onResetCamera, onZoomIn, onZoomOut, balance, ethBalance, totalIncome, totalCost, ownedCount, onOpenModal, t, lang, onToggleLang, economyStats, appreciationRate }) {
+export default function HUD({ onResetCamera, onZoomIn, onZoomOut, onOpenModal }) {
+  const { t, lang, setLang, balance, ethBalance, totalIncome, totalCost, netMonthly, economyStats } = useGame();
+
+  const menu = [
+    ['marketplace', <MarketplaceIcon key="i" />, t.marketplace],
+    ['inventory', <InventoryIcon key="i" />, t.inventory],
+    ['profile', <ProfileIcon key="i" />, t.profile],
+    ['vote', <VoteIcon key="i" />, t.vote],
+    ['referrals', <ReferralsIcon key="i" />, t.referrals],
+  ];
+
   return (
     <div className="hud-overlay">
       <div className="hud-sidebar">
         {/* Logo */}
         <div className="hud-logo-box glass">
-          <img src="/logo.png" alt="Mortgage" />
+          <Image src="/logo.png" alt="Mortgage" width={4004} height={465} priority />
         </div>
 
-        {/* Wallet + Lang (Using Real RainbowKit ConnectButton) */}
+        {/* Wallet + Lang (real RainbowKit ConnectButton) */}
         <div className="hud-wallet-row">
           <ConnectButton.Custom>
-            {({
-              account,
-              chain,
-              openAccountModal,
-              openConnectModal,
-              mounted,
-            }) => {
-              const ready = mounted;
-              const connected = ready && account && chain;
-
+            {({ account, chain, openAccountModal, openConnectModal, mounted }) => {
+              const connected = mounted && account && chain;
               return (
-                <div style={{ display: 'flex', flex: 1 }} {...(!ready && {
-                  'aria-hidden': true,
-                  style: {
-                    opacity: 0,
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                  },
-                })}>
-                  {(() => {
-                    if (!connected) {
-                      return (
-                        <button className="wallet-btn glass" onClick={openConnectModal} type="button" style={{ width: '100%' }}>
-                           <WalletIcon />
-                           <span>{t.connectWallet}</span>
-                        </button>
-                      );
-                    }
-
-                    return (
-                      <button className="wallet-btn glass connected" onClick={openAccountModal} type="button" style={{ width: '100%' }}>
-                        <WalletIcon />
-                        <span>{account.displayName}</span>
-                      </button>
-                    );
-                  })()}
+                <div style={{ display: 'flex', flex: 1 }} {...(!mounted && { 'aria-hidden': true, style: { opacity: 0, pointerEvents: 'none', userSelect: 'none', flex: 1, display: 'flex' } })}>
+                  {connected ? (
+                    <button className="wallet-btn glass connected" onClick={openAccountModal} type="button" style={{ width: '100%' }}>
+                      <WalletIcon />
+                      <span>{account.displayName}</span>
+                    </button>
+                  ) : (
+                    <button className="wallet-btn glass" onClick={openConnectModal} type="button" style={{ width: '100%' }}>
+                      <WalletIcon />
+                      <span>{t.connectWallet}</span>
+                    </button>
+                  )}
                 </div>
               );
             }}
           </ConnectButton.Custom>
-          
-          <button className="lang-btn glass" onClick={onToggleLang} title="Language">
+
+          <button className="lang-btn glass" onClick={() => setLang(lang === 'tr' ? 'en' : 'tr')} title="Language">
             <GlobeIcon />
             <span>{lang.toUpperCase()}</span>
           </button>
@@ -94,27 +86,27 @@ export default function HUD({ onResetCamera, onZoomIn, onZoomOut, balance, ethBa
         {/* Balance */}
         <div className="hud-balance glass">
           <div className="hud-balance-main">
-            <span className="hud-balance-amount">{(balance || 0).toLocaleString('tr-TR')}</span>
+            <span className="hud-balance-amount">{Math.round(balance).toLocaleString('en-US')}</span>
             <span className="hud-balance-currency">$MRT</span>
           </div>
-          <div className="hud-balance-sub" style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '-4px', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-            <span className="hud-balance-amount-eth" style={{ fontFamily: "'Outfit',sans-serif", fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{(ethBalance || 0).toFixed(3)}</span>
-            <span className="hud-balance-currency-eth" style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)' }}>ETH</span>
+          <div className="hud-balance-sub">
+            <span className="hud-balance-amount-eth">{ethBalance.toFixed(3)}</span>
+            <span className="hud-balance-currency-eth">ETH</span>
           </div>
           <div className="hud-balance-stats">
             <div className="hud-balance-stat">
-              <span className="hud-balance-stat-value income">+{(totalIncome || 0).toLocaleString('tr-TR')}</span>
+              <span className="hud-balance-stat-value income">+{totalIncome.toLocaleString('en-US')}</span>
               <span className="hud-balance-stat-label">{t.monthlyRent}</span>
             </div>
             <div className="hud-balance-stat">
-              <span className="hud-balance-stat-value expense">−{(totalCost || 0).toLocaleString('tr-TR')}</span>
+              <span className="hud-balance-stat-value expense">−{totalCost.toLocaleString('en-US')}</span>
               <span className="hud-balance-stat-label">{t.annualCost}</span>
             </div>
           </div>
-          <div className="hud-owned-badge"><strong>{ownedCount || 0}</strong> {t.properties}</div>
-          <div className="hud-appreciation-badge" style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: 'var(--green)', marginTop: '8px', fontWeight: '700' }}>
+          <div className="hud-owned-badge"><strong>{economyStats.yours}</strong> {t.properties}{netMonthly > 0 && <span className="hud-net-badge">+{netMonthly.toLocaleString('en-US')}/{lang === 'en' ? 'mo' : 'ay'}</span>}</div>
+          <div className="hud-appreciation-badge">
             <TrendingUpIcon size={16} style={{ color: 'var(--green)', strokeWidth: '2.5px' }} />
-            <span>Monaco Index: +{appreciationRate || 14.6}% / yr</span>
+            <span>Monaco Index: +{APPRECIATION_RATE}% / {lang === 'en' ? 'yr' : 'yıl'}</span>
           </div>
         </div>
 
@@ -122,31 +114,21 @@ export default function HUD({ onResetCamera, onZoomIn, onZoomOut, balance, ethBa
         <div className="hud-economy glass">
           <div className="hud-economy-title">{t.mapEconomy}</div>
           <div className="hud-economy-bar">
-            <div className="econ-fill taken" style={{ width: `${((economyStats?.sold || 0) / (economyStats?.total || 1)) * 100}%` }} />
+            <div className="econ-fill taken" style={{ width: `${(economyStats.sold / (economyStats.total || 1)) * 100}%` }} />
           </div>
           <div className="hud-economy-nums">
-            <span>{economyStats?.available || 0} {t.availableUnits}</span>
-            <span>{economyStats?.total || 0} {t.totalUnits}</span>
+            <span>{economyStats.available} {t.availableUnits}</span>
+            <span>{economyStats.total} {t.totalUnits}</span>
           </div>
         </div>
 
         {/* Menu */}
         <div className="hud-menu glass">
-          <button className="hud-menu-btn" onClick={() => onOpenModal('marketplace')}>
-            <MarketplaceIcon /><span>{t.marketplace}</span>
-          </button>
-          <button className="hud-menu-btn" onClick={() => onOpenModal('inventory')}>
-            <InventoryIcon /><span>{t.inventory}</span>
-          </button>
-          <button className="hud-menu-btn" onClick={() => onOpenModal('profile')}>
-            <ProfileIcon /><span>{t.profile}</span>
-          </button>
-          <button className="hud-menu-btn" onClick={() => onOpenModal('vote')}>
-            <VoteIcon /><span>{t.vote}</span>
-          </button>
-          <button className="hud-menu-btn" onClick={() => onOpenModal('referrals')}>
-            <ReferralsIcon /><span>{t.referrals}</span>
-          </button>
+          {menu.map(([key, icon, label]) => (
+            <button key={key} className="hud-menu-btn" onClick={() => onOpenModal(key)}>
+              {icon}<span>{label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
