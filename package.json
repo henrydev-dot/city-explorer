@@ -36,5 +36,8 @@
     "eslint-config-next": "16.2.10",
     "ethers": "^6.17.0",
     "hardhat": "^2.28.6"
+  },
+  "engines": {
+    "node": ">=20.9.0"
   }
 }

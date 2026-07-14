@@ -1,0 +1,8 @@
+# Dokploy/Nixpacks fallback config. The preferred build is the Dockerfile
+# (select Build Type → Dockerfile in Dokploy), but if Nixpacks is used this
+# pins a Node version compatible with Next.js 16 (requires >= 20.9).
+[variables]
+NIXPACKS_NODE_VERSION = "22"
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "npm-10_x"]
