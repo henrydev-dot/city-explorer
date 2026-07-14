@@ -229,7 +229,7 @@ contract MonacoEstate is ERC721, Ownable, ReentrancyGuard {
 
     function _primarySaleChecks(uint256 apartmentId) internal view returns (Apartment storage apt) {
         apt = apartments[apartmentId];
-        if (apt.buildingId >= nextBuildingId && bytes(apt.unit).length == 0) revert ApartmentUnknown();
+        if (bytes(apt.unit).length == 0) revert ApartmentUnknown();
         if (apt.minted) revert AlreadySold();
     }
 

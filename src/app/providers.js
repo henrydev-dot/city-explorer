@@ -4,7 +4,7 @@ import React from 'react';
 import '@rainbow-me/rainbowkit/styles.css';
 import { getDefaultConfig, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
-import { base, mainnet } from 'wagmi/chains';
+import { base, baseSepolia, mainnet } from 'wagmi/chains';
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { GameProvider } from '../state/GameContext';
 
@@ -12,7 +12,8 @@ import { GameProvider } from '../state/GameContext';
 const config = getDefaultConfig({
   appName: 'Mortgage Monaco',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '942be6e52002f232490df2cd9e69315d',
-  chains: [base, mainnet],
+  // Base Sepolia first while the game is on testnet (npm run chain:deploy:testnet).
+  chains: process.env.NEXT_PUBLIC_CHAIN === 'base' ? [base, mainnet] : [baseSepolia, base, mainnet],
   ssr: true,
 });
 

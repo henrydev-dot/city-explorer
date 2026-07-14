@@ -9,7 +9,8 @@ export const MARKET_FEE_RATE = 0.02;   // 2% P2P marketplace fee
 export const APPRECIATION_RATE = 14.6; // Monaco index, % / year
 
 // Display-only exchange rate used to compare MRT and ETH prices.
-export const MRT_PER_ETH = 100_000;
+// (Defined in catalog.mjs so Node scripts share the same value.)
+export { MRT_PER_ETH } from './catalog.mjs';
 
 // Gamified time: one in-game month passes every real-time minute, so rent
 // streams into the balance every second at monthlyNet / 60.

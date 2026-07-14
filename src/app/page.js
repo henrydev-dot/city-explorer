@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useCallback, Suspense, useEffect } from 'react';
+import { useState, useRef, useCallback, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
+import { useProgress } from '@react-three/drei';
 import CityScene from '../components/CityScene';
 import BuildingPanel from '../components/BuildingPanel';
 import HUD from '../components/HUD';
@@ -31,9 +32,13 @@ export default function Home() {
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [cameraTarget, setCameraTarget] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [loadProgress, setLoadProgress] = useState(0);
+  const [isSceneReady, setIsSceneReady] = useState(false);
   const [isWalkMode, setIsWalkMode] = useState(false);
   const controlsRef = useRef();
+
+  // Real download/parse progress of the ~12MB city model (drei loader store).
+  const { progress: rawProgress } = useProgress();
+  const loadProgress = isSceneReady ? 100 : Math.min(99, Math.round(rawProgress));
 
   // Dashboard routing — pages open instantly (no artificial loading delay).
   const [activePage, setActivePage] = useState(null);
@@ -48,8 +53,7 @@ export default function Home() {
   const handleZoomIn = useCallback(() => { if (controlsRef.current) { controlsRef.current.object.position.multiplyScalar(0.8); controlsRef.current.update(); } }, []);
   const handleZoomOut = useCallback(() => { if (controlsRef.current) { controlsRef.current.object.position.multiplyScalar(1.2); controlsRef.current.update(); } }, []);
 
-  useEffect(() => { [10, 25, 40, 55, 70, 85].forEach((v, i) => setTimeout(() => setLoadProgress(v), (i + 1) * 300)); }, []);
-  const handleSceneReady = useCallback(() => { setLoadProgress(100); setTimeout(() => setIsLoaded(true), 600); }, []);
+  const handleSceneReady = useCallback(() => { setIsSceneReady(true); setTimeout(() => setIsLoaded(true), 600); }, []);
 
   const ActiveDashboard = activePage ? DASHBOARD_PAGES[activePage] : null;
 

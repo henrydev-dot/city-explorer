@@ -5,17 +5,66 @@ import { useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Html, PointerLockControls, Sky } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Building name pool
-const BUILDING_NAMES = [
-  { name: 'Monte Carlo Casino', subtitle: 'Entertainment & Gaming', desc: 'The historic and world-famous Monaco landmark. Premier entertainment and gaming venue built in 1863.' },
-  { name: 'Larvotto Beach Tower', subtitle: 'Luxury Waterfront Residence', desc: 'Waterfront residential tower overlooking the sandy Larvotto coast, featuring premium luxury penthouses.' },
-  { name: 'Hôtel de Paris Block', subtitle: 'Premium Hotels & Suites', desc: 'Luxury grand hotel suites situated next to Casino Square. Built in 1864 with iconic architectural design.' },
-  { name: 'Port Hercule Residence', subtitle: 'Marinafront Estates', desc: 'Prime real estate directly facing the yacht marina. Houses exclusive grand balconies with F1 circuit views.' },
-  { name: 'Grimaldi Plaza', subtitle: 'Conventions & Arts', desc: 'The business, convention, and cultural center of Monaco. A state-of-the-art eco-building.' },
-  { name: 'La Condamine Offices', subtitle: 'Commercial District', desc: 'Modern commercial and retail workspace block in the historic market district.' },
-  { name: 'Jardin Exotique Heights', subtitle: 'Scenic View Apartments', desc: 'Residential heights built close to the exotic gardens, offering complete panoramic views of the sea.' },
-  { name: 'Princess Grace Plaza', subtitle: 'High-end Luxury Retail', desc: 'Prestige residences and luxury designer boutiques along the famous avenue.' }
+// Building anchors for lowpoly_sea_track.glb.
+// Coordinates were extracted from the GLB itself (vertex-cluster analysis of
+// tall structures) so markers, click colliders and walk-mode collisions all
+// snap to real towers. Order matches BUILDINGS in src/lib/gameState.js.
+export const BUILDING_ANCHORS = [
+  {
+    name: 'Monte Carlo Casino', subtitle: 'Entertainment & Gaming',
+    desc: 'The historic and world-famous Monaco landmark next to the gardens of Casino Square. Premier entertainment and gaming venue.',
+    pos: [48, 22.5, 6], size: [16, 29, 12],
+    floors: '38', area: '12,500', units: '10', built: '1863',
+  },
+  {
+    name: 'Larvotto Beach Tower', subtitle: 'Luxury Waterfront Residence',
+    desc: 'Waterfront residential slab on the eastern shore overlooking the sandy Larvotto coast, featuring premium luxury penthouses.',
+    pos: [86, 22.5, -19], size: [12, 29, 30],
+    floors: '42', area: '45,000', units: '60', built: '2018',
+  },
+  {
+    name: 'Hôtel de Paris Block', subtitle: 'Premium Hotels & Suites',
+    desc: 'Luxury grand hotel suites rising over the circuit chicane. Iconic architecture with sweeping harbor views.',
+    pos: [23, 22.5, -52], size: [14, 29, 16],
+    floors: '36', area: '36,000', units: '52', built: '1864',
+  },
+  {
+    name: 'Port Hercule Residence', subtitle: 'Marinafront Estates',
+    desc: 'Prime real estate directly on the yacht marina. Exclusive grand balconies with F1 start-line views.',
+    pos: [-86, 22, 15], size: [12, 28, 6],
+    floors: '34', area: '32,000', units: '48', built: '2015',
+  },
+  {
+    name: 'Grimaldi Plaza', subtitle: 'Conventions & Arts',
+    desc: 'The business, convention, and cultural center of Monaco. A state-of-the-art eco-tower above the old town.',
+    pos: [-4, 22.5, -51], size: [16, 29, 14],
+    floors: '40', area: '38,000', units: '56', built: '2020',
+  },
+  {
+    name: 'La Condamine Offices', subtitle: 'Commercial District',
+    desc: 'Modern commercial and retail workspace block in the historic market district beside the pit lane.',
+    pos: [-48, 22.5, -28], size: [16, 29, 8],
+    floors: '30', area: '20,000', units: '40', built: '2017',
+  },
+  {
+    name: 'Jardin Exotique Heights', subtitle: 'Scenic View Apartments',
+    desc: 'Residential heights on the western hillside near the exotic gardens, with panoramic sea views.',
+    pos: [-66, 22.5, -50], size: [16, 29, 16],
+    floors: '38', area: '30,000', units: '44', built: '2016',
+  },
+  {
+    name: 'Princess Grace Plaza', subtitle: 'High-end Luxury Retail',
+    desc: 'Prestige residences and designer boutiques above the lido pool club on Avenue Princesse Grace.',
+    pos: [80, 22.5, -58], size: [16, 29, 8],
+    floors: '32', area: '22,000', units: '42', built: '2019',
+  },
 ];
+
+// XZ footprints reused by the walk-mode collision solver.
+const WALK_COLLIDERS = BUILDING_ANCHORS.map((b) => ({
+  pos: [b.pos[0], b.pos[2]],
+  size: [b.size[0], b.size[2]],
+}));
 
 // ── Building Label ────────────────────────────────────────
 function BuildingLabel({ building, onClick, isSelected }) {
@@ -44,7 +93,6 @@ function ClickableBuilding({ building, position, colliderSize, onClick, isSelect
     const targetOpacity = isHovered ? 0.22 : isSelected ? 0.12 : 0;
     // eslint-disable-next-line react-hooks/immutability
     mat.opacity += (targetOpacity - mat.opacity) * 0.12;
-    // eslint-disable-next-line react-hooks/immutability
     mat.color.setHex(isHovered ? 0x00ffff : 0xffffff);
   });
 
@@ -173,6 +221,7 @@ function FirstPersonController() {
     };
   }, []);
 
+  /* eslint-disable react-hooks/immutability -- imperative three.js camera movement inside the R3F frame loop, outside React render */
   useFrame(() => {
     // Get movement directions relative to camera direction
     const direction = new THREE.Vector3();
@@ -195,16 +244,7 @@ function FirstPersonController() {
       moveVector.normalize().multiplyScalar(0.42); // smooth speed factor
       
       // Bounding boxes of the 8 buildings to prevent passing through them
-      const buildingsList = [
-        { pos: [37.35, 3.83],   size: [13.94, 13.97] },
-        { pos: [0.98, -50.68],  size: [14.74, 8.60] },
-        { pos: [-19.56, -29.62], size: [14.26, 9.24] },
-        { pos: [-33.78, -29.60], size: [15.98, 11.43] },
-        { pos: [6.39, -43.97],  size: [13.42, 11.89] },
-        { pos: [21.62, -21.13],  size: [12.55, 14.81] },
-        { pos: [-48.46, -33.40], size: [15.08, 13.91] },
-        { pos: [29.38, -9.26],   size: [12.69, 15.08] },
-      ];
+      const buildingsList = WALK_COLLIDERS;
 
       // Wall-sliding collision logic
       // Try moving along X only
@@ -244,9 +284,10 @@ function FirstPersonController() {
     camera.position.y = 9.8;
 
     // Boundaries to prevent walking out of limits (clamped Z to prevent walking into the sea)
-    camera.position.x = Math.max(-95, Math.min(65, camera.position.x));
+    camera.position.x = Math.max(-98, Math.min(98, camera.position.x));
     camera.position.z = Math.max(-105, Math.min(18, camera.position.z));
   });
+  /* eslint-enable react-hooks/immutability */
 
   return null;
 }
@@ -275,117 +316,19 @@ export default function CityScene({ onBuildingClick, selectedBuilding, controlsR
     });
   }, [scene]);
 
-  // Hardcoded coordinates optimized for lowpoly_sea_track.glb
+  // Buildings derived from the GLB-extracted anchors above.
   const buildingMeshes = useMemo(() => {
-    const assignedData = [
-      {
-        name: 'Monte Carlo Casino',
-        subtitle: 'Entertainment & Gaming',
-        desc: 'The historic and world-famous Monaco landmark. Premier entertainment and gaming venue built in 1863.',
-        pos: [37.35, 20.99, 3.83],
-        size: [13.94, 32.22, 13.97],
-        labelPos: [37.35, 38.0, 3.83],
-        floors: '3',
-        area: '2,500',
-        units: '10',
-        built: '1863'
-      },
-      {
-        name: 'Larvotto Beach Tower',
-        subtitle: 'Luxury Waterfront Residence',
-        desc: 'Waterfront residential tower overlooking the sandy Larvotto coast, featuring premium luxury penthouses.',
-        pos: [0.98, 21.06, -50.68],
-        size: [14.74, 32.08, 8.60],
-        labelPos: [0.98, 38.0, -50.68],
-        floors: '90',
-        area: '45,000',
-        units: '60',
-        built: '2018'
-      },
-      {
-        name: 'Hôtel de Paris Block',
-        subtitle: 'Premium Hotels & Suites',
-        desc: 'Luxury grand hotel suites situated next to Casino Square. Built in 1864 with iconic architectural design.',
-        pos: [-19.56, 16.66, -29.62],
-        size: [14.26, 27.09, 9.24],
-        labelPos: [-19.56, 31.5, -29.62],
-        floors: '78',
-        area: '36,000',
-        units: '52',
-        built: '1864'
-      },
-      {
-        name: 'Port Hercule Residence',
-        subtitle: 'Marinafront Estates',
-        desc: 'Prime real estate directly facing the yacht marina. Houses exclusive grand balconies with F1 circuit views.',
-        pos: [-33.78, 18.03, -29.60],
-        size: [15.98, 26.30, 11.43],
-        labelPos: [-33.78, 32.5, -29.60],
-        floors: '72',
-        area: '32,000',
-        units: '48',
-        built: '2015'
-      },
-      {
-        name: 'Grimaldi Plaza',
-        subtitle: 'Conventions & Arts',
-        desc: 'The business, convention, and cultural center of Monaco. A state-of-the-art eco-building.',
-        pos: [6.39, 21.06, -43.97],
-        size: [13.42, 32.08, 11.89],
-        labelPos: [6.39, 38.0, -43.97],
-        floors: '78',
-        area: '38,000',
-        units: '56',
-        built: '2020'
-      },
-      {
-        name: 'La Condamine Offices',
-        subtitle: 'Commercial District',
-        desc: 'Modern commercial and retail workspace block in the historic market district.',
-        pos: [21.62, 14.67, -21.13],
-        size: [12.55, 19.93, 14.81],
-        labelPos: [21.62, 26.0, -21.13],
-        floors: '60',
-        area: '20,000',
-        units: '40',
-        built: '2017'
-      },
-      {
-        name: 'Jardin Exotique Heights',
-        subtitle: 'Scenic View Apartments',
-        desc: 'Residential heights built close to the exotic gardens, offering complete panoramic views of the sea.',
-        pos: [-48.46, 20.90, -33.40],
-        size: [15.08, 32.40, 13.91],
-        labelPos: [-48.46, 38.0, -33.40],
-        floors: '72',
-        area: '30,000',
-        units: '44',
-        built: '2016'
-      },
-      {
-        name: 'Princess Grace Plaza',
-        subtitle: 'High-end Luxury Retail',
-        desc: 'Prestige residences and luxury designer boutiques along the famous avenue.',
-        pos: [29.38, 17.88, -9.26],
-        size: [12.69, 26.37, 15.08],
-        labelPos: [29.38, 32.5, -9.26],
-        floors: '60',
-        area: '22,000',
-        units: '42',
-        built: '2019'
-      }
-    ];
-
-    return assignedData.map((item, idx) => {
+    return BUILDING_ANCHORS.map((item, idx) => {
       const stats = [
         { label: 'Floors', value: item.floors },
-        { label: 'Area (m²)', value: item.area },
+        { label: 'Area (m\u00b2)', value: item.area },
         { label: 'Units', value: item.units },
-        { label: 'Built', value: item.built }
+        { label: 'Built', value: item.built },
       ];
 
       const center = new THREE.Vector3(...item.pos);
       const size = new THREE.Vector3(...item.size);
+      const labelPos = [item.pos[0], item.pos[1] + item.size[1] / 2 + 3, item.pos[2]];
 
       return {
         building: {
@@ -395,21 +338,19 @@ export default function CityScene({ onBuildingClick, selectedBuilding, controlsR
           subtitle: item.subtitle,
           description: item.desc,
           stats: stats,
-          labelPosition: item.labelPos,
+          labelPosition: labelPos,
           cameraTarget: { center: center.clone(), size: size.clone() },
         },
         position: item.pos,
-        colliderSize: item.size
+        colliderSize: item.size,
       };
     });
   }, []);
 
   // Signal the loading screen once the scene has produced its buildings.
   useEffect(() => {
-    console.log("CityScene useEffect: scene = ", !!scene, "buildingMeshes length = ", buildingMeshes.length);
     if (buildingMeshes.length === 0 || sceneReadyCalled.current) return undefined;
     sceneReadyCalled.current = true;
-    console.log("CityScene calling onSceneReady");
     const timer = setTimeout(() => onSceneReady?.(), 500);
     return () => clearTimeout(timer);
   }, [buildingMeshes, onSceneReady, scene]);

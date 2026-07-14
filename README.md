@@ -53,9 +53,38 @@ docker build -t monaco-estate .
 docker run -p 3000:3000 --env-file .env monaco-estate
 ```
 
-## Going fully on-chain
+## Blockchain — Base Sepolia testnet
 
-`contracts/` contains OpenZeppelin-based reference contracts mirroring every in-game rule — primary sales in both currencies, P2P marketplace with 2% fee, rent claims, referral commissions and governance voting. See `contracts/README.md` for the deploy + frontend wiring guide. **Not audited — audit before mainnet.**
+Hardhat is set up in-repo (`hardhat.config.cjs`, contracts compile with OpenZeppelin 5 / solc 0.8.28, EVM cancun). The deploy script seeds the **same 49-unit catalog** the app uses.
+
+```bash
+npm run chain:compile        # compile contracts
+npm run chain:test           # 7 gameplay tests on the in-process chain (all passing)
+npm run chain:deploy:local   # smoke deploy + full catalog seed on a local chain
+```
+
+Deploy to Base Sepolia and play:
+
+1. Put a funded testnet key in `.env`: `DEPLOYER_PRIVATE_KEY=0x…`
+   (free ETH: https://docs.base.org/tools/network-faucets)
+2. `npm run chain:deploy:testnet` — deploys test $MRT + MonacoEstate and seeds
+   8 buildings / 49 apartments, then prints the `NEXT_PUBLIC_…` lines.
+3. Paste those lines into `.env` (and Dokploy) — the Investor Profile page then
+   shows the live contract, and the wagmi config already targets Base Sepolia
+   (`NEXT_PUBLIC_CHAIN=baseSepolia`).
+
+`src/lib/contracts.js` exports the game ABI + addresses for wiring UI actions
+on-chain. **Not audited — audit before mainnet.**
+
+## Map performance
+
+The harbor map (`public/models/lowpoly_sea_track.glb`, ~12MB meshopt-compressed,
+~4MB gzipped on the wire) is served with `Cache-Control: immutable` (see
+`next.config.mjs`) so it downloads once and loads from disk cache afterwards.
+The loading screen shows the real download/parse progress. If you replace the
+map, **rename the file** so caches bust. Building markers/colliders are defined
+in `BUILDING_ANCHORS` (`src/components/CityScene.jsx`) — coordinates extracted
+from the GLB geometry itself.
 
 ## Roadmap
 

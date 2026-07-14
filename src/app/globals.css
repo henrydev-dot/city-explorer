@@ -420,9 +420,14 @@ button { font-family:var(--font-body); }
   border-bottom:1px solid var(--border-color);
 }
 .pc-art { position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center; }
-.pc-art svg { width:70%; height:88%; }
-.pc-art-tower { fill:hsla(var(--pc-hue), 30%, 32%, 0.65); }
-.pc-art-win { fill:hsla(var(--pc-hue), 70%, 72%, 0.5); }
+.pc-art svg { width:78%; height:92%; }
+/* Monaco motif palette — tinted by the tier hue */
+.ma-body { fill:hsla(var(--pc-hue), 32%, 38%, 0.75); color:hsla(var(--pc-hue), 32%, 42%, 0.8); }
+.ma-accent { fill:hsla(var(--pc-hue), 45%, 28%, 0.85); }
+.ma-win { fill:hsla(var(--pc-hue), 75%, 74%, 0.65); color:hsla(var(--pc-hue), 75%, 74%, 0.6); }
+.ma-hi { fill:hsla(var(--pc-hue), 80%, 66%, 0.8); }
+.ma-leaf { fill:hsla(calc(var(--pc-hue) + 60), 45%, 45%, 0.75); color:hsla(calc(var(--pc-hue) + 60), 45%, 45%, 0.75); }
+.ma-ground { fill:hsla(var(--pc-hue), 30%, 30%, 0.4); }
 .pc-art-glow {
   position:absolute; inset:0;
   background:radial-gradient(300px 90px at 50% 115%, hsla(var(--pc-hue), 70%, 55%, 0.18), transparent 70%);

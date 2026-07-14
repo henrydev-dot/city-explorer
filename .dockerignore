@@ -6,5 +6,9 @@ node_modules
 out
 coverage
 contracts
+test
+scripts
+.hardhat
+hardhat.config.cjs
 README.md
 *.log

@@ -5,6 +5,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useGame } from '../../state/GameContext';
 import { FlashIcon } from '../Icons';
 import { MRT_TOKEN_ADDRESS, formatMRT, shortAddr } from '../../lib/constants';
+import { ESTATE_ADDRESS, ACTIVE_CHAIN, isOnchainEnabled } from '../../lib/contracts';
 
 function SparkleIcon() {
   return (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -66,6 +67,17 @@ export default function ProfilePage() {
         <div className="token-info-box">
           <span className="stat-tile-lbl">{t.tokenInfo}</span>
           <code title={MRT_TOKEN_ADDRESS}>{shortAddr(MRT_TOKEN_ADDRESS)}</code>
+        </div>
+
+        <div className="token-info-box">
+          <span className="stat-tile-lbl">
+            {isOnchainEnabled()
+              ? `MonacoEstate · ${ACTIVE_CHAIN.name}`
+              : lang === 'tr' ? 'Zincir modu: kapalı (simülasyon)' : 'Chain mode: off (simulation)'}
+          </span>
+          {isOnchainEnabled()
+            ? <code title={ESTATE_ADDRESS}>{shortAddr(ESTATE_ADDRESS)}</code>
+            : <code style={{ color: 'var(--text-muted)' }}>npm run chain:deploy:testnet</code>}
         </div>
 
         <button className="pc-btn ghost danger-text" onClick={resetGame}>{t.resetGame}</button>
